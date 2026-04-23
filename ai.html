@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fishing Game</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to bottom, #87CEEB, #1E90FF);
+    color: white;
+    text-align: center;
+    margin: 0;
+}
+
+h1 { margin-top: 30px; }
+
+#money-display {
+    position: fixed;
+    top: 10px;
+    right: 20px;
+    background: rgba(0,0,0,0.3);
+    padding: 10px 15px;
+    border-radius: 10px;
+}
+
+/* Water */
+#water {
+    position: relative;
+    width: 100%;
+    height: 260px;
+    margin-top: 40px;
+    overflow: hidden;
+    background: linear-gradient(to bottom, #1E90FF, #187bcd);
+}
+
+/* Waves */
+.wave {
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.08), transparent 70%);
+    animation: waveMove 14s linear infinite;
+}
+.wave:nth-child(2) {
+    animation-duration: 20s;
+    opacity: 0.4;
+}
+@keyframes waveMove {
+    0% { transform: translateX(0) translateY(0); }
+    50% { transform: translateX(-25%) translateY(10px); }
+    100% { transform: translateX(-50%) translateY(0); }
+}
+
+/* Rod */
+#rod {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    width: 140px;
+    height: 6px;
+    background: #5c3b1e;
+    transform: translateX(-50%) rotate(-25deg);
+}
+#reel {
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    background: #333;
+    border-radius: 50%;
+    transform: translateX(-50%);
+}
+
+/* Line */
+#line {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 3px;
+    height: 0;
+    background: #222;
+    transform: translateX(-50%);
+    transition: height 0.8s ease;
+}
+
+/* Bobber */
+#bobber {
+    position: absolute;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    background: radial-gradient(circle at 30% 30%, white, red);
+    border-radius: 50%;
+    transform: translateX(-50%);
+    transition: top 0.8s ease;
+}
+
+/* Ripple */
+.ripple {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    border: 2px solid rgba(255,255,255,0.5);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    animation: ripple 2s infinite ease-out;
+}
+.ripple:nth-child(2) { animation-delay: 1s; }
+
+@keyframes ripple {
+    0% { width: 10px; height: 10px; opacity: 0.6; }
+    100% { width: 40px; height: 40px; opacity: 0; }
+}
+
+/* Bobbing */
+.bob {
+    animation: bobbing 2s ease-in-out infinite;
+}
+@keyframes bobbing {
+    0%,100% { transform: translate(-50%, 0); }
+    50% { transform: translate(-50%, 6px); }
+}
+
+/* Catch area */
+#catch-box {
+    width: 100%;
+    padding: 15px 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
+    border-top: 2px solid rgba(255,255,255,0.2);
+    margin-top: -5px;
+}
+
+/* Fish */
+.pixel-fish {
+    width: 60px;
+    height: 28px;
+    margin: 10px auto;
+    position: relative;
+    background: orange;
+    border-radius: 6px;
+}
+.pixel-fish::after {
+    content: "";
+    position: absolute;
+    right: -14px;
+    top: 8px;
+    border-left: 14px solid orange;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+}
+.pixel-fish::before {
+    content: "";
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    width: 6px;
+    height: 6px;
+    background: black;
+    border-radius: 50%;
+}
+
+/* UI */
+button {
+    padding: 15px 30px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    background: #28a745;
+    color: white;
+    cursor: pointer;
+}
+
+#play-again {
+    display: none;
+    margin-top: 20px;
+    background: #007bff;
+}
+
+#result { font-size: 20px; }
+
+/* Rarity */
+.common { color: #ddd; }
+.uncommon { color: #4caf50; }
+.rare { color: #2196f3; }
+.epic { color: #9c27b0; }
+.legendary { color: gold; }
+
+</style>
+</head>
+<body>
+
+<h1>🎣 Fishing Game</h1>
+<div id="money-display">💰 $0</div>
+
+<button onclick="goFish()">Go Fish!</button>
+
+<div id="water">
+    <div class="wave"></div>
+    <div class="wave"></div>
+
+    <div id="rod"></div>
+    <div id="reel"></div>
+
+    <div id="line"></div>
+
+    <div id="bobber">
+        <div class="ripple"></div>
+        <div class="ripple"></div>
+    </div>
+</div>
+
+<div id="catch-box">
+    <h3>You caught a...</h3>
+    <div id="fish"></div>
+    <div id="result">Cast your line to start fishing!</div>
+</div>
+
+<button id="play-again" onclick="resetGame()">Play Again</button>
+
+<script>
+let money = 0;
+let fishing = false;
+
+const fishList = [
+    { name: "Minnow", value: 2, chance: 30, rarity: "common", color: "gray" },
+    { name: "Bluegill", value: 5, chance: 20, rarity: "common", color: "lightblue" },
+    { name: "Trout", value: 10, chance: 15, rarity: "uncommon", color: "green" },
+    { name: "Bass", value: 15, chance: 12, rarity: "uncommon", color: "darkgreen" },
+    { name: "Salmon", value: 20, chance: 10, rarity: "rare", color: "pink" },
+    { name: "Tuna", value: 30, chance: 7, rarity: "rare", color: "blue" },
+    { name: "Swordfish", value: 40, chance: 4, rarity: "epic", color: "purple" },
+    { name: "Shark", value: 50, chance: 2, rarity: "legendary", color: "gold" }
+];
+
+function getRandomFish() {
+    let total = fishList.reduce((sum, f) => sum + f.chance, 0);
+    let rand = Math.random() * total;
+    for (let fish of fishList) {
+        if (rand < fish.chance) return fish;
+        rand -= fish.chance;
+    }
+}
+
+function goFish() {
+    if (fishing || money >= 50) return;
+    fishing = true;
+
+    const line = document.getElementById("line");
+    const bobber = document.getElementById("bobber");
+    const fishEl = document.getElementById("fish");
+    const result = document.getElementById("result");
+
+    // RESET line + bobber so animation can replay
+    line.style.transition = "none";
+    bobber.style.transition = "none";
+    line.style.height = "0px";
+    bobber.style.top = "0px";
+
+    // Force reflow
+    void line.offsetHeight;
+
+    // Re-enable animation
+    line.style.transition = "height 0.8s ease";
+    bobber.style.transition = "top 0.8s ease";
+
+    // Drop again
+    line.style.height = "180px";
+    bobber.style.top = "180px";
+
+    setTimeout(() => {
+        bobber.classList.add("bob");
+
+        const fish = getRandomFish();
+        money += fish.value;
+
+        fishEl.innerHTML = '<div class="pixel-fish"></div>';
+        fishEl.firstChild.style.background = fish.color;
+        fishEl.firstChild.style.borderLeftColor = fish.color;
+
+        result.innerHTML =
+            `<span class="${fish.rarity}">${fish.name}</span> worth $${fish.value}!`;
+
+        document.getElementById("money-display").innerText = `💰 $${money}`;
+
+        fishing = false;
+
+        if (money >= 50) {
+            setTimeout(() => {
+                alert("🎉 You Won! Congratulations Pro-Angler!");
+                document.getElementById("play-again").style.display = "inline-block";
+            }, 200);
+        }
+
+    }, 900);
+}
+
+function resetGame() {
+    money = 0;
+    fishing = false;
+    document.getElementById("money-display").innerText = "💰 $0";
+    document.getElementById("result").innerText = "Cast your line to start fishing!";
+    document.getElementById("fish").innerHTML = "";
+    document.getElementById("play-again").style.display = "none";
+    document.getElementById("bobber").classList.remove("bob");
+    document.getElementById("line").style.height = "0";
+}
+</script>
+
+</body>
+</html>
