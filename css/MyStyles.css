@@ -39,7 +39,7 @@ ul {
 }
 ol {
     width: fit-content;
-    text-align: center;
+    text-align: left;
     margin: auto;
 }
 
