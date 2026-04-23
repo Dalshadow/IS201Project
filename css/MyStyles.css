@@ -37,6 +37,12 @@ ul {
     text-align: left;
     margin: auto;
 }
+ol {
+    width: fit-content;
+    text-align: left;
+    margin: auto;
+}
+
 header {
     text-align: left;
     padding: 30px;
